@@ -4,6 +4,7 @@
 # Python virtual environment / installed packages
 development/
 development_glyph/
+visual/
 
 # Scratch: one-off helpers and diagnostics kept locally as reference, not committed
 scratch/
