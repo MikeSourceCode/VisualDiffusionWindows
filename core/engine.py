@@ -309,18 +309,49 @@ def load_loras_into_unet(pipe, lora_specs: List[LoraSpec], lora_dir: str, backen
     pipe.unload_lora_weights()
     clear_cache(backend)
     adapter_names = []
+    current_arch = getattr(pipe, "_architecture", "SDXL")
     for i, (name, weight) in enumerate(lora_specs):
         state_dict, network_alphas, metadata = pipe.lora_state_dict(
             lora_dir, weight_name=name, unet_config=pipe.unet.config, return_lora_metadata=True
         )
+        lora_arch = _detect_lora_architecture(state_dict)
+        if lora_arch and lora_arch != current_arch:
+            print(f"[LoRA] Skipping {name}: architecture mismatch "
+                  f"(LoRA is {lora_arch}, pipeline is {current_arch})")
+            continue
         if weight != 1.0:
             state_dict = {k: (v * weight if k.endswith("lora_up.weight") else v)
                           for k, v in state_dict.items()}
         adapter_name = f"lora{i + 1}"
-        pipe.load_lora_into_unet(state_dict, network_alphas=network_alphas, unet=pipe.unet,
-                                 adapter_name=adapter_name, metadata=metadata, _pipeline=pipe)
+        try:
+            pipe.load_lora_into_unet(state_dict, network_alphas=network_alphas, unet=pipe.unet,
+                                     adapter_name=adapter_name, metadata=metadata, _pipeline=pipe)
+        except RuntimeError as e:
+            if "size mismatch" in str(e):
+                print(f"[LoRA] Skipping {name}: weight shapes do not match "
+                      f"the current {current_arch} UNet ({e})")
+                continue
+            raise
         adapter_names.append(adapter_name)
-    pipe.unet.set_adapter(adapter_names)
+    if adapter_names:
+        pipe.unet.set_adapter(adapter_names)
+
+
+def _detect_lora_architecture(state_dict: dict) -> Optional[str]:
+    """Heuristic architecture detection from LoRA weight tensor shapes.
+
+        Returns ``"SDXL"`` if weights look like 1x1 conv LoRA adapters
+        (4D tensors), ``"SD15"`` if they look like linear LoRA adapters
+        (2D tensors), or ``None`` if it cannot be determined.
+    """
+    for k, v in state_dict.items():
+        if not isinstance(v, torch.Tensor):
+            continue
+        if v.ndim == 4:
+            return "SDXL"
+        if v.ndim == 2:
+            return "SD15"
+    return None
 
 
 def _build_conditioning(pipe, prompt: str, negative_prompt: str, architecture: str) -> dict:
@@ -497,7 +528,7 @@ def generate(pipe, backend: Backend, vram_state: VRAMState, config: AppConfig,
         try:
             preview = _decode_latents(pipe_instance, latents, backend)
             preview_callback(preview, step_index)
-            # One-shot early NSFW check at ~20% progress.
+            # One-shot early NSFW check at the configured fraction.
             if do_early_check and not early_checked["done"] and step_index >= early_step:
                 early_checked["done"] = True
                 _, flagged = safety.censor_image(preview)

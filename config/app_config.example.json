@@ -21,7 +21,7 @@
     "text_classifier_enabled": true,
     "early_safety_check": true,
     "early_safety_step": 0,
-    "early_safety_step_frac": 0.5
+    "early_safety_step_frac": 0.05
   },
   "tabs": {
     "text_to_image": {
@@ -50,7 +50,5 @@
       "default_prompt": "masterpiece, best quality, a person in dynamic pose",
       "default_negative_prompt": "worst quality, extra limbs, deformed"
     }
-  }
-}
   }
 }

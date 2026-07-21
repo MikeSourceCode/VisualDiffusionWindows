@@ -14,6 +14,7 @@ import signal
 import sys
 import threading
 import time
+import warnings
 
 import streamlit as st
 
@@ -56,6 +57,12 @@ from ui import render_share_card, render_phone_frame
 
 os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "1")
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message=".*resource_tracker.*leaked semaphore.*",
+)
 
 st.set_page_config(page_title="Visual Diffusion Studio", layout="wide")
 
@@ -282,7 +289,7 @@ def _remove_fragment(prompt, fragment):
     return ", ".join(parts)
 
 
-def prompt_with_tags(key_prefix, default_prompt="", default_negative="worst quality, low quality, blurry",
+def prompt_with_tags(key_prefix, default_prompt="", default_negative="",
                      positive_label="Positive Prompt", negative_label="Negative Prompt",
                      cfg=None, tab=None):
     """Render, in order: emoji pills -> Positive Prompt -> Negative Prompt.
@@ -295,16 +302,16 @@ def prompt_with_tags(key_prefix, default_prompt="", default_negative="worst qual
       1. ``cfg.tab_config(tab)`` (per-tab overrides)
       2. ``cfg.default_prompt`` / ``cfg.default_negative_prompt`` (common)
       3. explicit function arguments
-      4. built-in fallbacks
+      4. empty string
     """
-    # Resolve defaults from config (tab > common > explicit > built-in).
+    # Resolve defaults from config (tab > common > explicit > empty).
     tab_cfg = {}
     if cfg is not None and tab:
         tab_cfg = cfg.tab_config(tab) or {}
     if not default_prompt:
         default_prompt = tab_cfg.get("default_prompt") or (cfg.default_prompt if cfg else "") or ""
-    if default_negative == "worst quality, low quality, blurry":
-        default_negative = tab_cfg.get("default_negative_prompt") or (cfg.default_negative_prompt if cfg else "") or "worst quality, low quality, blurry"
+    if not default_negative:
+        default_negative = tab_cfg.get("default_negative_prompt") or (cfg.default_negative_prompt if cfg else "") or ""
 
     groups = _tag_groups()
     regular_groups = [g for g in groups if not g.get("composable")]

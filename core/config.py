@@ -115,7 +115,10 @@ class AppConfig:
     # Fixed step at which to run the early safety check (e.g. 2 = after step 2).
     # If 0, falls back to early_safety_step_frac.
     early_safety_step: int = 0
-    early_safety_step_frac: float = 0.5
+    # Fraction of total steps at which to run the early safety check when
+    # early_safety_step is 0. Lower = earlier abort on unsafe content.
+    # Default 0.05 = after ~5% of denoising (e.g. step 1 of 20).
+    early_safety_step_frac: float = 0.05
 
     # --- ControlNet / conditioning extras (used by specific tabs) ---
     controlnet_strength: float = 1.0
