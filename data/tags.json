@@ -1,0 +1,67 @@
+{
+  "_comment": "Editable click-to-prompt tag palette. Each group is a labeled list of tags. 'emoji' is shown on the pill; 'text' is what gets appended to the positive prompt (defaults to label if omitted).",
+  "groups": [
+    {
+      "name": "Quality",
+      "tags": [
+        { "emoji": "\ud83d\uddbc\ufe0f", "label": "Masterpiece", "text": "masterpiece" },
+        { "emoji": "\u2728", "label": "Best quality", "text": "best quality" },
+        { "emoji": "\ud83d\udd0d", "label": "Highly detailed", "text": "highly detailed" },
+        { "emoji": "\ud83c\udf9e\ufe0f", "label": "Cinematic", "text": "cinematic lighting" },
+        { "emoji": "\ud83d\udcf7", "label": "Photo", "text": "a photo of" },
+        { "emoji": "\ud83c\udfa8", "label": "Illustration", "text": "digital illustration" }
+      ]
+    },
+    {
+      "name": "Subject",
+      "tags": [
+        { "emoji": "\ud83d\udc67", "label": "Girl", "text": "girl" },
+        { "emoji": "\ud83d\udc68", "label": "Man", "text": "man" },
+        { "emoji": "\ud83d\udc31", "label": "Cat", "text": "cat" },
+        { "emoji": "\ud83d\ude97", "label": "Car", "text": "car" },
+        { "emoji": "\ud83e\udd16", "label": "Robot", "text": "robot" },
+        { "emoji": "\ud83c\udf49", "label": "Watermelon", "text": "watermelon" }
+      ]
+    },
+    {
+      "name": "Action",
+      "tags": [
+        { "emoji": "\ud83d\udc83", "label": "Dancing", "text": "dancing" },
+        { "emoji": "\ud83c\udfc3", "label": "Running", "text": "running" },
+        { "emoji": "\ud83c\udfd0", "label": "Volleyball", "text": "playing volleyball" },
+        { "emoji": "\ud83d\ude0a", "label": "Smiling", "text": "smiling" },
+        { "emoji": "\ud83e\uddd8", "label": "Sitting", "text": "sitting" }
+      ]
+    },
+    {
+      "name": "Scene",
+      "tags": [
+        { "emoji": "\ud83c\udfd6\ufe0f", "label": "Beach", "text": "on the beach" },
+        { "emoji": "\ud83c\udf03", "label": "City", "text": "city at night" },
+        { "emoji": "\ud83c\udf32", "label": "Forest", "text": "in a forest" },
+        { "emoji": "\ud83c\udfd4\ufe0f", "label": "Mountains", "text": "mountains" },
+        { "emoji": "\ud83c\udf05", "label": "Sunset", "text": "at sunset" }
+      ]
+    },
+    {
+      "name": "Style",
+      "tags": [
+        { "emoji": "\ud83c\udf00", "label": "Anime", "text": "anime style" },
+        { "emoji": "\ud83d\udd8c\ufe0f", "label": "Watercolor", "text": "watercolor painting" },
+        { "emoji": "\ud83d\udcbe", "label": "Cyberpunk", "text": "cyberpunk" },
+        { "emoji": "\ud83c\udff0", "label": "Fantasy", "text": "fantasy" },
+        { "emoji": "\ud83d\udcf8", "label": "Portrait", "text": "85mm portrait" }
+      ]
+    },
+    {
+      "name": "Color",
+      "composable": true,
+      "tags": [
+        { "emoji": "\ud83d\udfe2", "label": "Green", "text": "green" },
+        { "emoji": "\ud83d\udfe0", "label": "Red", "text": "red" },
+        { "emoji": "\ud83d\udfe1", "label": "Yellow", "text": "yellow" },
+        { "emoji": "\ud83d\udfe4", "label": "Blue", "text": "blue" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Vendored image safety-checker weights — downloaded by each user, NOT committed.
+# See README.md for the download commands. Only README.md is tracked.
+*
+!.gitignore
+!README.md

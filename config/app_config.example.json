@@ -1,0 +1,56 @@
+{
+  "_comment": "Visual Diffusion operator configuration. To disable the safety blackout, set safety_checker_black_out_nsfw to FALSE (exact literal).",
+  "common": {
+    "checkpoint": "sd_xl_base_1.0.safetensors",
+    "vae": "",
+    "loras": [],
+    "steps": 20,
+    "cfg_scale": 7.0,
+    "seed": 0,
+    "sharpness": 0.0,
+    "strength": 0.65,
+    "width": 768,
+    "height": 1368,
+    "show_previews": true,
+    "preview_frequency": 1,
+    "controlnet_strength": 1.0,
+    "ip_adapter_scale": 0.6,
+    "default_prompt": "",
+    "default_negative_prompt": "",
+    "safety_checker_black_out_nsfw": true,
+    "text_classifier_enabled": true,
+    "early_safety_check": true,
+    "early_safety_step": 0,
+    "early_safety_step_frac": 0.5
+  },
+  "tabs": {
+    "text_to_image": {
+      "default_prompt": "masterpiece, best quality, highly detailed, a serene mountain lake at sunrise",
+      "default_negative_prompt": "worst quality, low quality, bad anatomy, extra fingers, deformed, blurry"
+    },
+    "image_to_image": {
+      "default_prompt": "masterpiece, best quality, highly detailed, a portrait of a woman with blue hair",
+      "default_negative_prompt": "worst quality, low quality, bad anatomy, extra fingers, deformed, blurry",
+      "strength": 0.65
+    },
+    "image_control": {
+      "default_prompt": "masterpiece, best quality",
+      "default_negative_prompt": "worst quality, blurry",
+      "controlnet_strength": 1.0
+    },
+    "ip_consistency": {
+      "default_prompt": "masterpiece, best quality",
+      "default_negative_prompt": "worst quality",
+      "ip_adapter_scale": 0.6
+    },
+    "image_to_text": {
+      "default_negative_prompt": "worst quality, low quality, blurry"
+    },
+    "pose_control": {
+      "default_prompt": "masterpiece, best quality, a person in dynamic pose",
+      "default_negative_prompt": "worst quality, extra limbs, deformed"
+    }
+  }
+}
+  }
+}
