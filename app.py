@@ -645,13 +645,16 @@ def tab_image_to_text(assets):
         out = st.empty()
 
     if not gen:
-        cached = st.session_state.get("vd_result_Image → Text")
-        if cached is not None:
-            render_share_card(cached["result"], caption="9:16",
-                              share_text=cached.get("share_text", ""),
-                              size=cached.get("size"), target=out, key_prefix="share_i2t")
+        if uploaded is not None:
+            render_phone_frame(src, caption="Source", target=out)
         else:
-            render_phone_frame(None, caption="9:16", target=out)
+            cached = st.session_state.get("vd_result_Image → Text")
+            if cached is not None:
+                render_share_card(cached["result"], caption="9:16",
+                                  share_text=cached.get("share_text", ""),
+                                  size=cached.get("size"), target=out, key_prefix="share_i2t")
+            else:
+                render_phone_frame(None, caption="9:16", target=out)
 
     if gen:
         if not prompt.strip():
