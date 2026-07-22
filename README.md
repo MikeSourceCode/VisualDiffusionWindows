@@ -7,24 +7,24 @@ app runs entirely under your local control.
 
 ## Demo
 
-![Hero overview](./assets/app_demo.png)
+<p align="center">
+  <img src="./assets/app_demo.png" width="700" alt="Hero overview">
+</p>
 
 ### Key Features
 
-| Feature | Screenshot |
-|---------|------------|
-| Text -> Image | ![Feature](./assets/text2image.png) |
-| Brainstorming | ![Feature](./assets/brainstorming.png) |
-| Prompting with emojis | ![Feature](./assets/emojiprompting.png) |
-| Terminal ASCII previews | ![Feature](./assets/terminal_ASCII.png) |
-| Terminal summary overview | ![Feature](./assets/terminal_summary.png) |
+| Feature                  | Screenshot | Feature                       | Screenshot |
+|--------------------------|------------|-------------------------------|------------|
+| Text → Image             | <img src="./assets/text2image.png" width="240" alt="Text to Image"> | Brainstorming                 | <img src="./assets/brainstorming.png" width="240" alt="Brainstorming"> |
+| Prompting with emojis    | <img src="./assets/emojiprompting.png" width="240" alt="Emoji Prompting"> | Terminal summary overview     | <img src="./assets/terminal_summary.png" width="240" alt="Terminal Summary"> |
 
 ### Sample Gallery
 
-| :---: | :---: | :---: |
-| ![Alt 1](./assets/sample_01.png) | ![Alt 2](./assets/sample_02.png) | ![Alt 3](./assets/sample_03.png) |
-| ![Alt 4](./assets/sample_04.png) | ![Alt 5](./assets/sample_05.png) | ![Alt 6](./assets/sample_06.png) |
-| ![Alt 7](./assets/sample_07.png) | ![Alt 8](./assets/sample_08.png) | ![Alt 9](./assets/sample_09.png) |
+| | | |
+|:---:|:---:|:---:|
+| <img src="./assets/sample_01.png" width="220" alt="Sample 1"> | <img src="./assets/sample_02.png" width="220" alt="Sample 2"> | <img src="./assets/sample_03.png" width="220" alt="Sample 3"> |
+| <img src="./assets/sample_04.png" width="220" alt="Sample 4"> | <img src="./assets/sample_05.png" width="220" alt="Sample 5"> | <img src="./assets/sample_06.png" width="220" alt="Sample 6"> |
+| <img src="./assets/sample_07.png" width="220" alt="Sample 7"> | <img src="./assets/sample_08.png" width="220" alt="Sample 8"> | <img src="./assets/sample_09.png" width="220" alt="Sample 9"> |
 
 ## Essential Setup
 
