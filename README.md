@@ -15,6 +15,9 @@ app runs entirely under your local control.
 |---------|------------|
 | Text -> Image | ![Feature](./assets/text2image.png) |
 | Brainstorming | ![Feature](./assets/brainstorming.png) |
+| Prompting with emojis | ![Feature](./assets/emojiprompting.png) |
+| Terminal ASCII previews | ![Feature](./assets/terminal_ASCII.png) |
+| Terminal summary overview | ![Feature](./assets/terminal_summary.png) |
 
 ### Sample Gallery
 
