@@ -292,12 +292,11 @@ def _remove_fragment(prompt, fragment):
 
 def prompt_with_tags(key_prefix, default_prompt="", default_negative="",
                      positive_label="Positive Prompt", negative_label="Negative Prompt",
-                     cfg=None, tab=None):
+                     cfg=None, tab=None, show_tags: bool = True):
     """Render, in order: emoji pills -> Positive Prompt -> Negative Prompt.
 
-    Selecting a pill injects its text into the Positive Prompt box (and keeps
-    the pill selected); deselecting removes it. Manual edits are preserved.
-    Returns ``(positive_prompt, negative_prompt)``.
+    If ``show_tags`` is False, the emoji/color/surprise/clear-tag UI is hidden
+    but the prompt text boxes still render and return their values.
 
     Defaults come from the config file in this order:
       1. ``cfg.tab_config(tab)`` (per-tab overrides)
@@ -333,7 +332,7 @@ def prompt_with_tags(key_prefix, default_prompt="", default_negative="",
             label = f"{t['emoji']} {t['label']}".strip()
             regular_label_to_text[label] = t["text"]
 
-    if regular_label_to_text:
+    if show_tags and regular_label_to_text:
         st.caption("Click emoji tags to add them to your prompt (click again to remove)")
         st.pills(
             "Tags",
@@ -349,55 +348,56 @@ def prompt_with_tags(key_prefix, default_prompt="", default_negative="",
                       on_click=_clear_tag_keys, args=([pills_key],))
 
     # 1b) Composable color pills (compose with the last selected noun).
-    for cgroup in composable_groups:
-        cname = cgroup["name"]
-        ctags = cgroup["tags"]
-        color_labels = [f"{t['emoji']} {t['label']}".strip() for t in ctags]
-        color_label_to_text = {f"{t['emoji']} {t['label']}".strip(): t["text"] for t in ctags}
-        color_pills_key = f"{key_prefix}_color_tags"
-        color_applied_key = f"{key_prefix}_color_applied"
+    if show_tags:
+        for cgroup in composable_groups:
+            cname = cgroup["name"]
+            ctags = cgroup["tags"]
+            color_labels = [f"{t['emoji']} {t['label']}".strip() for t in ctags]
+            color_label_to_text = {f"{t['emoji']} {t['label']}".strip(): t["text"] for t in ctags}
+            color_pills_key = f"{key_prefix}_color_tags"
+            color_applied_key = f"{key_prefix}_color_applied"
 
-        st.caption(f"Pick a color to combine with your subject (e.g. blue + car = a blue car)")
-        c1, c2 = st.columns([3, 1])
-        with c1:
-            st.pills(
-                cname,
-                color_labels,
-                selection_mode="multi",
-                key=color_pills_key,
-                label_visibility="collapsed",
-                on_change=_compose_color_into_prompt,
-                args=(prompt_key, color_pills_key, applied_key, color_label_to_text),
-            )
-        with c2:
-            subject_texts = [t["text"] for g in regular_groups for t in g.get("tags", []) if g.get("name") == "Subject"]
+            st.caption(f"Pick a color to combine with your subject (e.g. blue + car = a blue car)")
+            c1, c2 = st.columns([3, 1])
+            with c1:
+                st.pills(
+                    cname,
+                    color_labels,
+                    selection_mode="multi",
+                    key=color_pills_key,
+                    label_visibility="collapsed",
+                    on_change=_compose_color_into_prompt,
+                    args=(prompt_key, color_pills_key, applied_key, color_label_to_text),
+                )
+            with c2:
+                subject_texts = [t["text"] for g in regular_groups for t in g.get("tags", []) if g.get("name") == "Subject"]
 
-            def _surprise_color(key_prefix=key_prefix, color_pills_key=color_pills_key,
-                                  applied_key=applied_key, color_label_to_text=color_label_to_text,
-                                  subject_texts=subject_texts):
-                import random as _rnd
-                if not color_label_to_text:
-                    st.warning("No color tags available.")
-                    return
-                color = _rnd.choice(list(color_label_to_text.values()))
-                applied = st.session_state.get(applied_key, [])
-                subject_candidates = [t for t in applied if t in subject_texts]
-                if subject_candidates:
-                    noun = subject_candidates[-1]
-                elif subject_texts:
-                    noun = _rnd.choice(subject_texts)
-                else:
-                    st.warning("No subject tags defined — add some in data/tags.json.")
-                    return
-                composed = _compose_color_noun(color, noun)
-                prompt = st.session_state.get(f"{key_prefix}_prompt", "") or ""
-                if composed and not _contains_fragment(prompt, composed):
-                    prompt = _append_fragment(prompt, composed)
-                st.session_state[f"{key_prefix}_prompt"] = prompt
-                st.session_state[color_pills_key] = []
-                st.rerun()
+                def _surprise_color(key_prefix=key_prefix, color_pills_key=color_pills_key,
+                                      applied_key=applied_key, color_label_to_text=color_label_to_text,
+                                      subject_texts=subject_texts):
+                    import random as _rnd
+                    if not color_label_to_text:
+                        st.warning("No color tags available.")
+                        return
+                    color = _rnd.choice(list(color_label_to_text.values()))
+                    applied = st.session_state.get(applied_key, [])
+                    subject_candidates = [t for t in applied if t in subject_texts]
+                    if subject_candidates:
+                        noun = subject_candidates[-1]
+                    elif subject_texts:
+                        noun = _rnd.choice(subject_texts)
+                    else:
+                        st.warning("No subject tags defined — add some in data/tags.json.")
+                        return
+                    composed = _compose_color_noun(color, noun)
+                    prompt = st.session_state.get(f"{key_prefix}_prompt", "") or ""
+                    if composed and not _contains_fragment(prompt, composed):
+                        prompt = _append_fragment(prompt, composed)
+                    st.session_state[f"{key_prefix}_prompt"] = prompt
+                    st.session_state[color_pills_key] = []
+                    st.rerun()
 
-            st.button("🎲 Surprise", key=f"{key_prefix}_surprise", on_click=_surprise_color)
+                st.button("🎲 Surprise", key=f"{key_prefix}_surprise", on_click=_surprise_color)
 
     # 2) Positive prompt (tags are injected into this box).
     positive = st.text_area(positive_label, height=120, key=prompt_key)
@@ -441,7 +441,7 @@ def tab_image_to_image(assets):
     col1, col2 = st.columns([1, 1])
     with col1:
         uploaded = st.file_uploader("Source image", type=["png", "jpg", "jpeg", "webp"])
-        prompt, negative = prompt_with_tags("i2i", cfg=cfg, tab="image_to_image")
+        prompt, negative = prompt_with_tags("i2i", cfg=cfg, tab="image_to_image", show_tags=False)
         gen = st.button("⚡ Generate", use_container_width=True, key="i2i_gen")
     with col2:
         out = st.empty()
@@ -635,6 +635,7 @@ def tab_image_to_text(assets):
             positive_label="Description / Positive Prompt (auto-filled from the image — editable)",
             cfg=cfg,
             tab="image_to_text",
+            show_tags=False,
         )
         gen = st.button("⚡ Generate new image", use_container_width=True, key="i2t_gen")
     with col2:
