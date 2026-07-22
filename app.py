@@ -585,6 +585,11 @@ def tab_image_to_text(assets):
                "from the text alone. The output draws no pixels with the source.")
     cfg = st.session_state.app_config
 
+    if st.session_state.get("i2t_nsfw_error"):
+        st.error("[SAFETY] Potential unsafe content detected in the source image; "
+                 "aborting before analysis. Discard the image and upload a different one.")
+        st.session_state.pop("i2t_nsfw_error", None)
+
     col1, col2 = st.columns([1, 1])
     with col1:
         uploaded = st.file_uploader("Image to analyze", type=["png", "jpg", "jpeg"], key="i2t_src")
@@ -597,9 +602,12 @@ def tab_image_to_text(assets):
             if SAFETY_CHECKER_BLACK_OUT_NSFW:
                 _censored, _flagged = censor_image(src)
                 if _flagged:
-                    st.error("[SAFETY] Potential unsafe content detected in the source image; "
-                             "aborting before analysis. Discard the image and upload a different one.")
-                    src = None
+                    st.session_state["i2t_src"] = None
+                    st.session_state.pop("i2t_sig", None)
+                    st.session_state.pop("i2t_prompt", None)
+                    st.session_state.pop("i2t_applied_tags", None)
+                    st.session_state["i2t_nsfw_error"] = True
+                    st.rerun()
                     st.stop()
 
             # Automatically describe the image once per uploaded file, writing
