@@ -5,6 +5,24 @@ A Streamlit-based image generation studio with a mobile-first 9:16 share workflo
 No models, weights, or checkpoints are bundled. You provide the assets in `models/`; the
 app runs entirely under your local control.
 
+## Demo
+
+![Hero overview](./assets/app_demo.png)
+
+### Key Features
+
+| Feature | Screenshot |
+|---------|------------|
+| Text -> Image | ![Feature](./assets/text2image.png) |
+| Brainstorming | ![Feature](./assets/brainstorming.png) |
+
+### Sample Gallery
+
+| :---: | :---: | :---: |
+| ![Alt 1](./assets/sample_01.png) | ![Alt 2](./assets/sample_02.png) | ![Alt 3](./assets/sample_03.png) |
+| ![Alt 4](./assets/sample_04.png) | ![Alt 5](./assets/sample_05.png) | ![Alt 6](./assets/sample_06.png) |
+| ![Alt 7](./assets/sample_07.png) | ![Alt 8](./assets/sample_08.png) | ![Alt 9](./assets/sample_09.png) |
+
 ## Essential Setup
 
 1. **Clone** the repo
