@@ -459,13 +459,16 @@ def tab_image_to_image(assets):
                         init_image=init_img, preview_slot=out,
                         share_card=True, share_text=prompt, tab="Image → Image", key_prefix="share_i2i")
     else:
-        cached = st.session_state.get("vd_result_Image → Image")
-        if cached is not None:
-            render_share_card(cached["result"], caption="9:16",
-                              share_text=cached.get("share_text", ""),
-                              size=cached.get("size"), target=out, key_prefix="share_i2i")
+        if uploaded is not None:
+            render_phone_frame(init_img, caption="Source", target=out)
         else:
-            render_phone_frame(None, caption="9:16", target=out)
+            cached = st.session_state.get("vd_result_Image → Image")
+            if cached is not None:
+                render_share_card(cached["result"], caption="9:16",
+                                  share_text=cached.get("share_text", ""),
+                                  size=cached.get("size"), target=out, key_prefix="share_i2i")
+            else:
+                render_phone_frame(None, caption="9:16", target=out)
 
 
 def tab_image_control(assets):
