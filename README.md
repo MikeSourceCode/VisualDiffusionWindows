@@ -47,9 +47,9 @@ through every parameter to create or update the config from scratch.
 
 ## Safety & Operator Responsibility
 
-All content moderation lives in `safety.py` and is enforced in three layers:
+All content moderation lives in `safety.py` and is enforced in four layers:
 
-1. **Prompt term gate** — operator-maintained blocklist; prompts in non-Latin scripts are refused
+1. **Prompt term gate** — operator-maintained blocklist in `safety.py`; prompts in non-Latin scripts are refused
 2. **Text classifier** — optional prompt-side NSFW check before generation starts
 3. **Image censor** — CompVis StableDiffusionSafetyChecker replaces flagged output with a black image
 4. **Early safety gate** — single CLIP check at a configurable denoise step to abort unsafe content early
