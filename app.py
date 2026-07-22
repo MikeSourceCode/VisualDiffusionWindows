@@ -53,6 +53,7 @@ from core import (
 )
 from core.tags import shuffle_tag_groups, _compose_color_noun
 from core import persistence
+from safety import censor_image, SAFETY_CHECKER_BLACK_OUT_NSFW
 from ui import render_share_card, render_phone_frame
 
 os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
@@ -579,9 +580,9 @@ def tab_text_to_image(assets):
 
 
 def tab_image_to_text(assets):
-    st.markdown("### Image → Text → Image (Brainstorm / IP-wash)")
-    st.caption("Describe an uploaded image, add concept tags, then generate a brand-new image "
-               "from the text alone. The output shares no pixels with the source.")
+    st.markdown("### Image → Text → Image (Brainstorm)")
+    st.caption("Describe an uploaded image, add concept tags, then brainstorm a brand-new image "
+               "from the text alone. The output draws no pixels with the source.")
     cfg = st.session_state.app_config
 
     col1, col2 = st.columns([1, 1])
@@ -591,6 +592,15 @@ def tab_image_to_text(assets):
         if uploaded is not None:
             src = _pil_from_upload(uploaded)
             st.image(src, caption="Source (not used in output)", width=260)
+
+            # Safety gate: refuse NSFW source images before analysis/captioning.
+            if SAFETY_CHECKER_BLACK_OUT_NSFW:
+                _censored, _flagged = censor_image(src)
+                if _flagged:
+                    st.error("[SAFETY] Potential unsafe content detected in the source image; "
+                             "aborting before analysis. Discard the image and upload a different one.")
+                    src = None
+                    st.stop()
 
             # Automatically describe the image once per uploaded file, writing
             # the caption into the positive-prompt box shared with prompt_with_tags.
