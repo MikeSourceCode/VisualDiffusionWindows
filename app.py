@@ -8,6 +8,7 @@ Run:
     development/bin/streamlit run app.py
 """
 
+import json
 import os
 import random
 import signal
@@ -115,6 +116,24 @@ def refresh_pipeline(cfg: AppConfig, assets: dict):
         st.error(f"Checkpoint not found: {cfg.checkpoint}")
         return None, None, None
 
+    # Reject model sets whose model_index.json declares a non-SD pipeline class.
+    if os.path.isdir(ckpt_path):
+        index_path = os.path.join(ckpt_path, "model_index.json")
+        if os.path.exists(index_path):
+            try:
+                with open(index_path, "r", encoding="utf-8") as f:
+                    idx = json.load(f)
+                class_name = idx.get("_class_name", "")
+            except Exception:
+                class_name = ""
+            if class_name and "StableDiffusion" not in class_name:
+                st.error(
+                    f"'{cfg.checkpoint}' uses an unsupported pipeline class: "
+                    f"{class_name}. This app only supports Stable Diffusion / "
+                    "Stable Diffusion XL model sets."
+                )
+                return None, None, None
+
     cache_key = (cfg.checkpoint, cfg.vae, cfg.architecture, os.path.isdir(ckpt_path))
     is_new = st.session_state.get("vd_cache_key") != cache_key
     if is_new:
@@ -168,10 +187,12 @@ def universal_sidebar(assets: dict) -> AppConfig:
     st.sidebar.caption(f"Architecture: **{cfg.architecture}**")
 
     vae_opts = [""] + assets["vaes"]
+    vae_labels = ["Built-in (default)"] + assets["vaes"]
     if cfg.vae not in vae_opts:
         cfg.vae = ""
     vae_idx = vae_opts.index(cfg.vae)
-    cfg.vae = st.sidebar.selectbox("Custom VAE (blank = built-in)", vae_opts, index=vae_idx)
+    selected_label = st.sidebar.selectbox("Custom VAE", vae_labels, index=vae_idx)
+    cfg.vae = vae_opts[vae_labels.index(selected_label)]
 
     # Up to two stackable LoRAs.
     lora_opts = [""] + assets["loras"]
