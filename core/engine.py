@@ -24,12 +24,12 @@ from diffusers import (
     EulerDiscreteScheduler,
     StableDiffusionPipeline,
     StableDiffusionImg2ImgPipeline,
+    StableDiffusionXLPipeline,
+    StableDiffusionXLImg2ImgPipeline,
     StableDiffusionXLControlNetImg2ImgPipeline,
     StableDiffusionXLControlNetPipeline,
-    StableDiffusionXLPipeline,
     StableDiffusionControlNetImg2ImgPipeline,
     StableDiffusionControlNetPipeline,
-    StableDiffusionPipeline,
 )
 from diffusers.schedulers.scheduling_euler_discrete import EulerDiscreteSchedulerOutput
 
