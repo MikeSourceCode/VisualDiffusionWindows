@@ -74,30 +74,29 @@ def _scan_model_set(folder: str) -> Dict[str, dict]:
     for name in candidates:
         root = os.path.join(folder, name)
         has_weights = False
-        has_index = False
+        model_index_path = None
         for r, _, files in os.walk(root):
             for f in files:
                 if f.endswith(WEIGHT_EXTS):
                     has_weights = True
-                elif f == "model_index.json":
-                    has_index = True
-                if has_weights and has_index:
+                elif f == "model_index.json" and model_index_path is None:
+                    model_index_path = os.path.join(r, f)
+                if has_weights and model_index_path:
                     break
-            if has_weights or has_index:
+            if has_weights and model_index_path:
                 break
-        if has_weights or has_index:
-            out[name] = {"path": root, "arch": _detect_model_set_arch(root)}
+        if has_weights or model_index_path:
+            out[name] = {"path": root, "arch": _detect_model_set_arch(root, model_index_path)}
     return out
 
 
-def _detect_model_set_arch(root: str) -> str:
+def _detect_model_set_arch(root: str, model_index_path: Optional[str]) -> str:
     """Heuristically classify a model-set directory as 'SDXL' or 'SD 1.5'."""
     if os.path.isdir(os.path.join(root, "text_encoder_2")):
         return "SDXL"
-    model_index = os.path.join(root, "model_index.json")
-    if os.path.exists(model_index):
+    if model_index_path and os.path.exists(model_index_path):
         try:
-            with open(model_index, "r", encoding="utf-8") as f:
+            with open(model_index_path, "r", encoding="utf-8") as f:
                 idx = json.load(f)
             repo = idx.get("repo_id", "") or ""
             if "xl" in repo.lower() or "sdxl" in repo.lower():

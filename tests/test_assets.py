@@ -40,9 +40,11 @@ class TestModelSetScanning(unittest.TestCase):
     def test_model_set_detects_xl_from_repo_id(self):
         with tempfile.TemporaryDirectory() as tmp:
             model_dir = os.path.join(tmp, "model_set", "ponyV6XL")
-            os.makedirs(model_dir, exist_ok=True)
-            with open(os.path.join(model_dir, "model_index.json"), "w") as f:
+            os.makedirs(os.path.join(model_dir, "transformer"), exist_ok=True)
+            with open(os.path.join(model_dir, "transformer", "model_index.json"), "w") as f:
                 f.write('{"repo_id": "ponyDiffusionV6XL"}')
+            with open(os.path.join(model_dir, "transformer", "diffusion_pytorch_model.safetensors"), "w") as f:
+                f.write("")
             result = _scan_model_set(os.path.join(tmp, "model_set"))
             self.assertEqual(result["ponyV6XL"]["arch"], "SDXL")
 
