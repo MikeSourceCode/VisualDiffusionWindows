@@ -103,19 +103,27 @@ def refresh_pipeline(cfg: AppConfig, assets: dict):
     if not cfg.checkpoint:
         return None, None, None
     d = assets["dirs"]
-    ckpt_path = os.path.join(d["checkpoints"], cfg.checkpoint)
+
+    # Determine whether the selected checkpoint is a single file or a model-set folder.
+    if cfg.checkpoint in assets.get("model_sets", {}):
+        ckpt_path = os.path.join(d["model_set"], cfg.checkpoint)
+    else:
+        ckpt_path = os.path.join(d["checkpoints"], cfg.checkpoint)
+
     vae_path = os.path.join(d["vae"], cfg.vae) if cfg.vae else default_vae_path(d["vae"])
     if not os.path.exists(ckpt_path):
         st.error(f"Checkpoint not found: {cfg.checkpoint}")
         return None, None, None
-    cache_key = (cfg.checkpoint, cfg.vae, cfg.architecture)
+
+    cache_key = (cfg.checkpoint, cfg.vae, cfg.architecture, os.path.isdir(ckpt_path))
     is_new = st.session_state.get("vd_cache_key") != cache_key
     if is_new:
         cached_load_base_pipeline.clear()
         st.session_state.vd_cache_key = cache_key
     if is_new:
+        label = f"'{cfg.checkpoint}' (folder)" if os.path.isdir(ckpt_path) else f"'{cfg.checkpoint}'"
         print(f"[load] building pipeline: ckpt={cfg.checkpoint} vae={vae_path or 'fp16-fix'} arch={cfg.architecture}", flush=True)
-        with st.spinner(f"Loading '{cfg.checkpoint}' into memory — first load is slow..."):
+        with st.spinner(f"Loading {label} into memory — first load is slow..."):
             t0 = time.time()
             pipe, be, vr = cached_load_base_pipeline(ckpt_path, vae_path, cfg.architecture)
             print(f"[load] pipeline ready in {time.time() - t0:.1f}s", flush=True)
@@ -130,12 +138,33 @@ def universal_sidebar(assets: dict) -> AppConfig:
     st.sidebar.markdown("### 🎛️ Global Settings")
 
     ckpt_names = list(assets["checkpoints"].keys())
-    if cfg.checkpoint not in ckpt_names:
-        cfg.checkpoint = DEFAULT_CHECKPOINT if DEFAULT_CHECKPOINT in ckpt_names else (ckpt_names[0] if ckpt_names else "")
-    ckpt_idx = ckpt_names.index(cfg.checkpoint) if cfg.checkpoint in ckpt_names else 0
-    sel_ckpt = st.sidebar.selectbox("Checkpoint", ckpt_names, index=ckpt_idx)
-    cfg.architecture = assets["checkpoints"].get(sel_ckpt, {}).get("arch", cfg.architecture)
-    cfg.checkpoint = sel_ckpt
+    model_set_names = list(assets.get("model_sets", {}).keys())
+    all_ckpt_names = ckpt_names + [f"📁 {n}" for n in model_set_names]
+
+    def _display_name(name: str) -> str:
+        if name.startswith("📁 "):
+            return name
+        if name in assets.get("model_sets", {}):
+            return f"📁 {name}"
+        return name
+
+    def _resolve_name(name: str) -> tuple[str, str]:
+        """Return (display_name, storage_name) where storage_name is the raw name."""
+        if name.startswith("📁 "):
+            return name, name[2:]
+        return name, name
+
+    current_display = _display_name(cfg.checkpoint)
+    if current_display not in all_ckpt_names:
+        cfg.checkpoint = DEFAULT_CHECKPOINT if DEFAULT_CHECKPOINT in all_ckpt_names else (all_ckpt_names[0] if all_ckpt_names else "")
+    current_display = _display_name(cfg.checkpoint)
+    ckpt_idx = all_ckpt_names.index(current_display) if current_display in all_ckpt_names else 0
+    sel_display = st.sidebar.selectbox("Checkpoint", all_ckpt_names, index=ckpt_idx)
+    sel_storage, sel_name = _resolve_name(sel_display)
+
+    ckpt_meta = assets["checkpoints"].get(sel_name) or assets.get("model_sets", {}).get(sel_name) or {}
+    cfg.architecture = ckpt_meta.get("arch", cfg.architecture)
+    cfg.checkpoint = sel_name
     st.sidebar.caption(f"Architecture: **{cfg.architecture}**")
 
     vae_opts = [""] + assets["vaes"]

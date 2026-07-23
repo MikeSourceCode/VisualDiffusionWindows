@@ -1,7 +1,8 @@
-"""Asset discovery: scan model folders for checkpoints, VAEs, LoRAs, controlnets.
+"""Asset discovery: scan model folders for checkpoints, model sets, VAEs, LoRAs, controlnets.
 
-Uses the same `.safetensors` header inspection the original scripts used to
-detect SDXL vs SD 1.5.
+A checkpoint is a single weight file in ``models/checkpoints/``.
+A model set is a directory under ``models/model_set/`` that contains a full
+diffusers-compatible snapshot (folder-based model).
 """
 
 from __future__ import annotations
@@ -56,13 +57,65 @@ def scan_subfolder(folder: str) -> List[str]:
     return _scan(folder)
 
 
+def _scan_model_set(folder: str) -> Dict[str, dict]:
+    """Recursively scan ``models/model_set`` for full-model directories.
+
+    Only immediate children of ``folder`` are considered candidates. A candidate
+    is treated as a model set if any weight file (``.safetensors`` / ``.bin``)
+    or ``model_index.json`` exists anywhere inside its subtree.
+    """
+    out: Dict[str, dict] = {}
+    if not os.path.isdir(folder):
+        return out
+    candidates = sorted(
+        d for d in os.listdir(folder)
+        if not d.startswith(".") and os.path.isdir(os.path.join(folder, d))
+    )
+    for name in candidates:
+        root = os.path.join(folder, name)
+        has_weights = False
+        has_index = False
+        for r, _, files in os.walk(root):
+            for f in files:
+                if f.endswith(WEIGHT_EXTS):
+                    has_weights = True
+                elif f == "model_index.json":
+                    has_index = True
+                if has_weights and has_index:
+                    break
+            if has_weights or has_index:
+                break
+        if has_weights or has_index:
+            out[name] = {"path": root, "arch": _detect_model_set_arch(root)}
+    return out
+
+
+def _detect_model_set_arch(root: str) -> str:
+    """Heuristically classify a model-set directory as 'SDXL' or 'SD 1.5'."""
+    if os.path.isdir(os.path.join(root, "text_encoder_2")):
+        return "SDXL"
+    model_index = os.path.join(root, "model_index.json")
+    if os.path.exists(model_index):
+        try:
+            with open(model_index, "r", encoding="utf-8") as f:
+                idx = json.load(f)
+            repo = idx.get("repo_id", "") or ""
+            if "xl" in repo.lower() or "sdxl" in repo.lower():
+                return "SDXL"
+        except Exception:
+            pass
+    return "SD 1.5"
+
+
 def discover_all(models_dir: str | None = None) -> Dict[str, object]:
     """Return a dict of every asset category discovered on disk."""
     d = config_model_dirs(models_dir)
     checkpoints = scan_checkpoints(d["checkpoints"])
+    model_sets = _scan_model_set(d["model_set"])
     return {
         "dirs": d,
         "checkpoints": checkpoints,
+        "model_sets": model_sets,
         "vaes": scan_subfolder(d["vae"]),
         "loras": scan_subfolder(d["lora"]),
         "controlnets": scan_subfolder(d["controlnet"]),

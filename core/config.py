@@ -190,6 +190,7 @@ def config_model_dirs(models_dir: Optional[str] = None):
     return {
         "models": models_dir,
         "checkpoints": os.path.join(models_dir, "checkpoints"),
+        "model_set": os.path.join(models_dir, "model_set"),
         "vae": os.path.join(models_dir, "vae"),
         "lora": os.path.join(models_dir, "lora"),
         "controlnet": os.path.join(models_dir, "controlnet"),

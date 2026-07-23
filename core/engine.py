@@ -245,17 +245,19 @@ def load_base_pipeline(model_path: str, vae_path: Optional[str], backend: Backen
     compute_dtype = torch.float16 if should_use_fp16(backend) else torch.float32
 
     custom_vae = bool(vae_path and os.path.exists(vae_path))
-    # A custom VAE is loaded fp32 to dodge the MPS fp16 NaN/gray overflow; any
-    # other VAE would need its own dtype policy. The default (no custom_vae) uses
-    # the checkpoint's baked-in SDXL VAE at the compute dtype.
-    if custom_vae:
-        vae = AutoencoderKL.from_single_file(vae_path, torch_dtype=custom_vae_dtype(backend))
-        pipe = pipe_class.from_single_file(model_path, vae=vae, torch_dtype=compute_dtype,
-                                           use_safetensors=True, upcast_vae=False)
+    if os.path.isdir(model_path):
+        pipe = pipe_class.from_pretrained(model_path, torch_dtype=compute_dtype, use_safetensors=True)
+        if custom_vae:
+            vae = AutoencoderKL.from_single_file(vae_path, torch_dtype=custom_vae_dtype(backend))
+            pipe.vae = vae
     else:
-        # Built-in VAE stays at the compute dtype (fp16 on MPS -> fast decode).
-        pipe = pipe_class.from_single_file(model_path, torch_dtype=compute_dtype,
-                                           use_safetensors=True, upcast_vae=False)
+        if custom_vae:
+            vae = AutoencoderKL.from_single_file(vae_path, torch_dtype=custom_vae_dtype(backend))
+            pipe = pipe_class.from_single_file(model_path, vae=vae, torch_dtype=compute_dtype,
+                                               use_safetensors=True, upcast_vae=False)
+        else:
+            pipe = pipe_class.from_single_file(model_path, torch_dtype=compute_dtype,
+                                               use_safetensors=True, upcast_vae=False)
 
     if architecture == "SD 1.5" and hasattr(pipe, "safety_checker"):
         pipe.safety_checker = None

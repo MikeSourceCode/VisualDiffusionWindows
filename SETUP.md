@@ -57,6 +57,26 @@ python setup.py
 streamlit run app.py
 ```
 
+## Adding Models
+
+### Single-file checkpoint
+
+```bash
+python getmodel.py microsoft/Mage-Flow mage_flow.safetensors
+```
+
+Saved to `models/checkpoints/`.
+
+### Full model set (multi-file / snapshot)
+
+```bash
+python getmodel.py stabilityai/stable-diffusion-xl-base-1.0
+```
+
+Saved to `models/model_set/stable-diffusion-xl-base-1.0/`.
+
+The app discovers both single-file checkpoints and full model-set folders automatically.
+
 ## Project Structure
 
 - **`app.py`** — Main Streamlit application and generation tabs
@@ -65,6 +85,7 @@ streamlit run app.py
 - **`config/app_config.example.json`** — Operator configuration template
 - **`config/app_config.json`** — Operator configuration (gitignored, created by `setup.py`)
 - **`setup.py`** — First-time setup, model downloads, and safety prompts
+- **`getmodel.py`** — Download helper for single-file checkpoints and full model sets
 - **`requirements.txt`** — Python dependencies
 
 ## Configuration
