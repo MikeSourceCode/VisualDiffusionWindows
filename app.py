@@ -116,24 +116,6 @@ def refresh_pipeline(cfg: AppConfig, assets: dict):
         st.error(f"Checkpoint not found: {cfg.checkpoint}")
         return None, None, None
 
-    # Reject model sets whose model_index.json declares a non-SD pipeline class.
-    if os.path.isdir(ckpt_path):
-        index_path = os.path.join(ckpt_path, "model_index.json")
-        if os.path.exists(index_path):
-            try:
-                with open(index_path, "r", encoding="utf-8") as f:
-                    idx = json.load(f)
-                class_name = idx.get("_class_name", "")
-            except Exception:
-                class_name = ""
-            if class_name and "StableDiffusion" not in class_name:
-                st.error(
-                    f"'{cfg.checkpoint}' uses an unsupported pipeline class: "
-                    f"{class_name}. This app only supports Stable Diffusion / "
-                    "Stable Diffusion XL model sets."
-                )
-                return None, None, None
-
     cache_key = (cfg.checkpoint, cfg.vae, cfg.architecture, os.path.isdir(ckpt_path))
     is_new = st.session_state.get("vd_cache_key") != cache_key
     if is_new:

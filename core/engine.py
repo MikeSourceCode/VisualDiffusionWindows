@@ -20,12 +20,12 @@ from PIL import Image, ImageEnhance
 from compel import CompelForSDXL
 from diffusers import (
     AutoencoderKL,
+    DiffusionPipeline,
     EulerDiscreteScheduler,
     StableDiffusionPipeline,
     StableDiffusionImg2ImgPipeline,
     StableDiffusionXLControlNetImg2ImgPipeline,
     StableDiffusionXLControlNetPipeline,
-    StableDiffusionXLImg2ImgPipeline,
     StableDiffusionXLPipeline,
     StableDiffusionControlNetImg2ImgPipeline,
     StableDiffusionControlNetPipeline,
@@ -246,7 +246,12 @@ def load_base_pipeline(model_path: str, vae_path: Optional[str], backend: Backen
 
     custom_vae = bool(vae_path and os.path.exists(vae_path))
     if os.path.isdir(model_path):
-        pipe = pipe_class.from_pretrained(model_path, torch_dtype=compute_dtype, use_safetensors=True)
+        try:
+            pipe = pipe_class.from_pretrained(model_path, torch_dtype=compute_dtype, use_safetensors=True)
+        except ValueError:
+            pipe = None
+        if pipe is None:
+            pipe = DiffusionPipeline.from_pretrained(model_path, torch_dtype=compute_dtype, use_safetensors=True)
         if custom_vae:
             vae = AutoencoderKL.from_single_file(vae_path, torch_dtype=custom_vae_dtype(backend))
             pipe.vae = vae
