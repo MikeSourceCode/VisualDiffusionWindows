@@ -248,10 +248,18 @@ def load_base_pipeline(model_path: str, vae_path: Optional[str], backend: Backen
     if os.path.isdir(model_path):
         try:
             pipe = pipe_class.from_pretrained(model_path, torch_dtype=compute_dtype, use_safetensors=True)
-        except ValueError:
+        except (ValueError, AttributeError):
             pipe = None
         if pipe is None:
-            pipe = DiffusionPipeline.from_pretrained(model_path, torch_dtype=compute_dtype, use_safetensors=True)
+            try:
+                pipe = DiffusionPipeline.from_pretrained(model_path, torch_dtype=compute_dtype, use_safetensors=True)
+            except AttributeError as exc:
+                raise RuntimeError(
+                    f"Cannot load model set '{os.path.basename(model_path)}': "
+                    f"the pipeline class declared in model_index.json is not available "
+                    f"in the installed diffusers version ({exc}). "
+                    "Try upgrading diffusers, or use a Stable Diffusion / SDXL model set."
+                ) from exc
         if custom_vae:
             vae = AutoencoderKL.from_single_file(vae_path, torch_dtype=custom_vae_dtype(backend))
             pipe.vae = vae
