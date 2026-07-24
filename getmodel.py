@@ -20,6 +20,27 @@ DEFAULT_CHECKPOINTS = REPO_ROOT / "models" / "checkpoints"
 DEFAULT_MODEL_SET = REPO_ROOT / "models" / "model_set"
 
 
+def _check_repo_compatibility(repo_id: str) -> bool:
+    """Pre-flight check: validate model_index.json via HF Hub API before downloading."""
+    try:
+        from core.compatibility import validate_repo
+    except ImportError:
+        print("[warn] core.compatibility not available; skipping pre-download check")
+        return True
+
+    print(f"Checking compatibility for '{repo_id}' ...")
+    result = validate_repo(repo_id)
+    if result:
+        print("  -> Compatible")
+        return True
+
+    print("  -> INCOMPATIBLE:")
+    for reason in result.reasons:
+        print(f"     - {reason}")
+    print("\nAborting download. Use a Stable Diffusion / SDXL model set instead.")
+    return False
+
+
 def download(repo_id: str, filename: str | None = None) -> None:
     if filename:
         dest = DEFAULT_CHECKPOINTS
@@ -32,6 +53,8 @@ def download(repo_id: str, filename: str | None = None) -> None:
             local_dir_use_symlinks=False,
         )
     else:
+        if not _check_repo_compatibility(repo_id):
+            sys.exit(1)
         safe_name = repo_id.replace("/", "_")
         dest = DEFAULT_MODEL_SET / safe_name
         dest.mkdir(parents=True, exist_ok=True)

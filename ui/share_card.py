@@ -92,6 +92,9 @@ _PHONE_CSS = """
     font: 600 13px/1.4 -apple-system, system-ui, sans-serif;
     text-align: center; padding: 0 24px;
   }
+  .vd-placeholder--danger {
+    background: linear-gradient(160deg, #dc0101, #0f1015);
+  }
 </style>
 """
 
@@ -129,18 +132,27 @@ def _fit_9x16(img: Image.Image, size: Optional[tuple] = None) -> Image.Image:
     return resized.crop((left, top, left + target_w, top + target_h))
 
 
-def _phone_html(img: Optional[Image.Image], caption: str = "") -> str:
+def _phone_html(img: Optional[Image.Image], caption: str = "",
+                safety_off: bool = False) -> str:
     """Build the phone-frame HTML fragment (a <div>, not a full document).
 
-    With ``img`` it embeds the image; without it, a purple->pink gradient
-    placeholder is shown so the frame is always visible.
+    With ``img`` it embeds the image; without it, a gradient placeholder is
+    shown so the frame is always visible. When ``safety_off`` is True, the
+    placeholder uses a red-to-black gradient with a warning message.
     """
     badge = f'<span class="vd-badge">{caption}</span>' if caption else ""
     if img is not None:
         data_uri = image_to_data_uri(img, "JPEG" if img.mode == "RGB" else "PNG")
         screen_html = f'<img src="{data_uri}" alt="preview">'
     else:
-        screen_html = f'<div class="vd-placeholder">{_PLACEHOLDER_TEXT}</div>'
+        if safety_off:
+            screen_html = (
+                '<div class="vd-placeholder vd-placeholder--danger">'
+                'Safety Checker is OFF'
+                '</div>'
+            )
+        else:
+            screen_html = f'<div class="vd-placeholder">{_PLACEHOLDER_TEXT}</div>'
     return (
         _PHONE_CSS
         + '<div class="vd-wrap"><div class="vd-phone">'
@@ -154,6 +166,7 @@ def _phone_html(img: Optional[Image.Image], caption: str = "") -> str:
 
 
 def render_phone_frame(img: Optional[Image.Image] = None, caption: str = "",
+                       safety_off: bool = False,
                        target: Optional[object] = None) -> None:
     """Render just the iPhone frame (image or gradient placeholder), no buttons.
 
@@ -163,14 +176,10 @@ def render_phone_frame(img: Optional[Image.Image] = None, caption: str = "",
     (so repeated previews REPLACE in place instead of stacking). With no target,
     it renders at the current Streamlit context.
 
-    The frame is a plain HTML/CSS <div> rendered via st.markdown
-    (unsafe_allow_html=True) — NOT an <iframe>. Unlike the old iframe approach
-    the chrome and image are one document, so previews (driven by the parent's
-    st.empty() placeholder) update the SAME element in place; we only resend the
-    inner <img>, the phone chrome is not rebuilt. The data-URI <img> and inline
-    <style> are both preserved by Streamlit's markdown renderer.
+    When ``safety_off`` is True, the placeholder shows a red-to-black gradient
+    with a "Safety Checker is OFF" warning.
     """
-    html = _phone_html(img, caption)
+    html = _phone_html(img, caption, safety_off=safety_off)
     if target is not None:
         target.markdown(html, unsafe_allow_html=True)
     else:
@@ -179,7 +188,7 @@ def render_phone_frame(img: Optional[Image.Image] = None, caption: str = "",
 
 def render_share_card(img: Image.Image, caption: str = "", share_text: str = "",
                       key_prefix: str = "share", target: Optional[object] = None,
-                      size: Optional[tuple] = None) -> None:
+                      size: Optional[tuple] = None, safety_off: bool = False) -> None:
     """Render the 9:16 phone-frame preview and share/download actions.
 
     ``img`` is any PIL image. It is displayed cover-cropped inside a CSS iPhone
@@ -190,19 +199,12 @@ def render_share_card(img: Image.Image, caption: str = "", share_text: str = "",
     ``st.empty()`` placeholder; when given, everything is written into it so the
     card replaces the preview in place.
 
-    IMPORTANT: when ``target`` is an ``st.empty()`` placeholder we must emit every
-    element via the ``target.*`` methods (``target.markdown``,
-    ``target.columns`` …) and NEVER wrap it in ``with target:``. Entering
-    ``with target:`` REPLACES everything already written into the placeholder with
-    the block's children, which would wipe the phone-frame markup and leave only
-    the trailing caption. Bare ``st.markdown`` inside such a block also does not
-    persist, so we always use the explicit ``target.`` form.
+    When ``safety_off`` is True, the phone placeholder shows a red-to-black
+    gradient with a "Safety Checker is OFF" warning.
     """
     if target is None:
         target = st.container()
-    # Frame first, written via the explicit target.markdown path that the previews
-    # use (and that reliably persists inside an st.empty() placeholder).
-    render_phone_frame(img, caption, target=target)
+    render_phone_frame(img, caption, target=target, safety_off=safety_off)
     # Buttons + tip go into a FRESH child container. An st.empty() is a single-slot
     # placeholder: calling target.columns(...) / target.download_button(...) on the
     # SAME DG slot REPLACES the frame we just wrote. Routing them through a child

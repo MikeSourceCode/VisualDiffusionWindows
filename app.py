@@ -54,6 +54,7 @@ from core import (
 )
 from core.tags import shuffle_tag_groups, _compose_color_noun
 from core import persistence
+from core.compatibility import validate_local_model_set
 from safety import censor_image, SAFETY_CHECKER_BLACK_OUT_NSFW
 from ui import render_share_card, render_phone_frame
 
@@ -99,36 +100,6 @@ def cached_load_base_pipeline(model_path, vae_path, architecture):
     return pipe, backend, vram_state
 
 
-def _validate_model_set(path: str) -> list[str]:
-    """Return a list of human-readable issues if a model-set folder looks incomplete."""
-    issues = []
-    if not os.path.isdir(path):
-        return [f"Model set folder missing: {path}"]
-    index = os.path.join(path, "model_index.json")
-    if not os.path.exists(index):
-        issues.append("Missing model_index.json — download may be incomplete")
-    candidates = [
-        "unet", "transformer", "text_encoder", "tokenizer", "vae", "scheduler"
-    ]
-    found_weights = False
-    for name in candidates:
-        d = os.path.join(path, name)
-        if os.path.isdir(d):
-            for root, _, files in os.walk(d):
-                for f in files:
-                    if f.endswith((".safetensors", ".bin")):
-                        found_weights = True
-                        break
-                if found_weights:
-                    break
-    if not found_weights:
-        issues.append(
-            "No weight files (.safetensors/.bin) found in expected subfolders "
-            "(unet/ or transformer/). The download is likely incomplete."
-        )
-    return issues
-
-
 def refresh_pipeline(cfg: AppConfig, assets: dict):
     """(Re)build the cached base pipeline when checkpoint/VAE/arch changes."""
     if not cfg.checkpoint:
@@ -147,11 +118,11 @@ def refresh_pipeline(cfg: AppConfig, assets: dict):
         return None, None, None
 
     if os.path.isdir(ckpt_path):
-        issues = _validate_model_set(ckpt_path)
-        if issues:
+        result = validate_local_model_set(ckpt_path, backend=cfg.architecture)
+        if not result:
             st.error(
-                f"**'{cfg.checkpoint}' appears incomplete.**\\n\\n" +
-                "\\n".join(f"- {issue}" for issue in issues) +
+                f"**'{cfg.checkpoint}' is not compatible.**\\n\\n" +
+                "\\n".join(f"- {r}" for r in result.reasons) +
                 "\\n\\nRe-download it with:\\n" +
                 f"```bash\\npython getmodel.py {cfg.checkpoint.replace('_', '/')}\\n```"
             )
