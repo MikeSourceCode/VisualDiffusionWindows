@@ -168,7 +168,7 @@ def _prompt_common(models_root: str, existing: dict) -> dict:
     common["strength"] = float(input(f"Img2Img Strength [{common.get('strength', 0.65)}]: ") or common.get("strength", 0.65))
 
     print("\n--- Output Size (Text→Image) ---")
-    print("  1. 1:1 Square (512x512)")
+    print("  1. 9:16 Portrait (384x684)")
     print("  2. 9:16 Portrait (768x1368)")
     print("  3. 3:4 Portrait (896x1152)")
     print("  4. 1:1 Square (1024x1024)")
@@ -178,7 +178,7 @@ def _prompt_common(models_root: str, existing: dict) -> dict:
     cur_h = common.get("height", 1368)
     choice = input(f"Output size [default={cur_w}x{cur_h}]: ").strip()
     size_map = {
-        "1": (512, 512),
+        "1": (384, 684),
         "2": (768, 1368),
         "3": (896, 1152),
         "4": (1024, 1024),
