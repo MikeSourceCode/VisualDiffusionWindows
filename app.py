@@ -211,6 +211,7 @@ def universal_sidebar(assets: dict) -> AppConfig:
     st.sidebar.divider()
     # Output aspect ratio for text-to-image (img2img uses the source size).
     ratios = {
+        "1:1 Square (512x512)": (512, 512),
         "9:16 Portrait (768x1368)": (768, 1368),
         "3:4 Portrait (896x1152)": (896, 1152),
         "1:1 Square (1024x1024)": (1024, 1024),
