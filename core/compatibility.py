@@ -205,7 +205,14 @@ def validate_repo(repo_id: str) -> CompatibilityResult:
             local_dir_use_symlinks=False,
         )
     except Exception as exc:
-        reasons.append(f"Could not fetch model_index.json from {repo_id}: {exc}")
+        reasons.append(
+            f"Could not fetch model_index.json from {repo_id}: {exc}"
+        )
+        reasons.append(
+            "This repo may be a single-file checkpoint, not a folder-based model set. "
+            "If so, download it with a filename argument instead, e.g.:\n"
+            f"  python getmodel.py {repo_id} <filename>.safetensors"
+        )
         return CompatibilityResult(False, reasons)
 
     idx = _load_json(local_path)
