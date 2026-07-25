@@ -627,6 +627,63 @@ def tab_text_to_image(assets):
             render_phone_frame(None, caption="9:16", target=out)
 
 
+def tab_pixel_art(assets):
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.markdown("### Text → Pixel Art")
+        st.caption("Generate an image, then pixelate it with nearest-neighbor downscaling.")
+        cfg = st.session_state.app_config
+        pipe, backend, vram_state = refresh_pipeline(cfg, assets)
+        if pipe is None:
+            st.warning("No checkpoint selected.")
+            return
+        prompt, negative = prompt_with_tags(
+            "px",
+            cfg=cfg,
+            tab="pixel_art",
+            default_prompt="pixel art, 16-bit SNES style, limited color palette, clean pixels, dithering, retro game sprite, transparent background",
+            default_negative="3d, realistic, blurry, smooth, anti-aliased, photorealistic, soft edges, gradient",
+        )
+        pixel_scale = st.slider("Pixel Scale", 2, 32, 8, 1,
+                                help=" Divisor for nearest-neighbor downscale. Higher = chunkier pixels.")
+        gen = st.button("🎮 Generate Pixel Art", use_container_width=True, key="px_gen")
+    with col2:
+        out = st.empty()
+
+    if gen and prompt.strip():
+        def _final(shell, result, share_text, cfg, key_prefix):
+            from PIL import Image
+            w, h = result.size
+            small_w, small_h = max(1, w // pixel_scale), max(1, h // pixel_scale)
+            small = result.resize((small_w, small_h), Image.NEAREST)
+            pixelated = small.resize((w, h), Image.NEAREST)
+            st.session_state["vd_result_Text → Pixel Art"] = {
+                "result": pixelated,
+                "share_text": prompt,
+                "size": (w, h),
+            }
+            with shell.container():
+                render_share_card(pixelated, caption=f"{small_w}x{small_h} pixels",
+                                  share_text=prompt, size=(w, h),
+                                  key_prefix="share_px")
+
+        _run_generation(pipe, backend, vram_state, cfg, prompt, negative,
+                        init_image=None, preview_slot=out,
+                        share_card=True, share_text=prompt,
+                        tab="Text → Pixel Art", key_prefix="share_px_tmp",
+                        final_render_callback=_final)
+    elif gen:
+        st.warning("Enter a prompt or pick some tags first.")
+    else:
+        cached = st.session_state.get("vd_result_Text → Pixel Art")
+        if cached is not None:
+            render_share_card(cached["result"], caption="Pixel Art",
+                              share_text=cached.get("share_text", ""),
+                              size=cached.get("size"), target=out, key_prefix="share_px")
+        else:
+            render_phone_frame(None, caption="Pixel Art", target=out)
+
+
 def tab_image_to_text(assets):
     st.markdown("### Image → Text → Image (Brainstorm)")
     st.caption("Describe an uploaded image, add concept tags, then brainstorm a brand-new image "
@@ -841,7 +898,7 @@ def print_telemetry(tab: str, backend, vram_state, architecture: str, checkpoint
 
 def _run_generation(pipe, backend, vram_state, cfg, prompt, negative, preview_slot,
                     init_image=None, control_image=None, share_card=False, share_text="",
-                    tab="Unknown", key_prefix="share"):
+                    tab="Unknown", key_prefix="share", final_render_callback=None):
     cache_key = f"vd_result_{tab}"
     st.session_state.pop(cache_key, None)
     t_click = time.time()
@@ -900,20 +957,24 @@ def _run_generation(pipe, backend, vram_state, cfg, prompt, negative, preview_sl
                         gen_time, cfg.width, cfg.height, cfg.sharpness)
         shell.empty()
         if share_card:
-            with shell.container():
-                render_share_card(result, caption="9:16", share_text=share_text,
-                                  size=(cfg.width, cfg.height), key_prefix=key_prefix)
+            if final_render_callback is not None:
+                final_render_callback(shell, result, share_text, cfg, key_prefix)
+            else:
+                with shell.container():
+                    render_share_card(result, caption="9:16", share_text=share_text,
+                                      size=(cfg.width, cfg.height), key_prefix=key_prefix)
             # if saved_path:
             #     shell.caption(f"Saved to {saved_path}")
         else:
             shell.image(result, caption="Final Rendered Output", width="stretch")
             # if saved_path:
             #     shell.caption(f"Saved to {saved_path}")
-        st.session_state[f"vd_result_{tab}"] = {
-            "result": result,
-            "share_text": share_text,
-            "size": (cfg.width, cfg.height),
-        }
+        if final_render_callback is None:
+            st.session_state[f"vd_result_{tab}"] = {
+                "result": result,
+                "share_text": share_text,
+                "size": (cfg.width, cfg.height),
+            }
         return result
     except SystemExit as e:
         st.error(str(e))
@@ -1068,20 +1129,22 @@ def main():
         os._exit(0)
 
     tabs = st.tabs([
-        "Text → Image", "Image → Text", "Image → Image", "Image Control",
+        "Text → Image", "Text → Pixel Art", "Image → Text", "Image → Image", "Image Control",
         "IP Consistency", "Pose Control",
     ])
     with tabs[0]:
         tab_text_to_image(assets)
     with tabs[1]:
-        tab_image_to_text(assets)
+        tab_pixel_art(assets)
     with tabs[2]:
-        tab_image_to_image(assets)
+        tab_image_to_text(assets)
     with tabs[3]:
-        tab_image_control(assets)
+        tab_image_to_image(assets)
     with tabs[4]:
-        tab_ip_consistency(assets)
+        tab_image_control(assets)
     with tabs[5]:
+        tab_ip_consistency(assets)
+    with tabs[6]:
         tab_pose_control(assets)
 
 
