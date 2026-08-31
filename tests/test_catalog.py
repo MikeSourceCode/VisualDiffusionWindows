@@ -54,7 +54,7 @@ class TestCatalog(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             missing = missing_entries(tmp)
             # On an empty root, all file/snapshot entries are missing (annotator
-            # depends on the HF cache, so it is excluded from this assertion).
+            # depends on local weights, so it is excluded from this assertion).
             file_based = [e for e in CATALOG if e.kind != "annotator"]
             for e in file_based:
                 self.assertIn(e, missing)

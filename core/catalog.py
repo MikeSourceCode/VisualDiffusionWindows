@@ -1,15 +1,15 @@
-"""Model catalog: the single source of truth for downloadable assets.
+"""Model catalog: the single source of truth for local assets.
 
-Both setup.py (interactive download) and the app (runtime "is it present?"
+Both setup.py (asset listing) and the app (runtime "is it present?"
 checks and slow-load notices) read from this list so paths never drift.
 
 Each entry describes one asset:
 - key:     stable identifier
 - kind:    checkpoint | vae | controlnet | annotator
-- repo:    Hugging Face repo id
+- repo:    original Hugging Face repo id (for reference only)
 - files:   list of filenames to fetch (empty => whole-repo snapshot)
 - dest:    directory under the project (relative)
-- size:    approximate download size, human string (for the prompt)
+- size:    approximate size, human string (for the prompt)
 - desc:    short description
 - required_for: which app feature(s) need it
 """
@@ -106,14 +106,14 @@ CATALOG: List[CatalogEntry] = [
 
 
 def _annotator_cached(repo: str = "lllyasviel/Annotators") -> bool:
-    """Check whether the controlnet_aux annotator weights exist in the HF cache."""
-    try:
-        from huggingface_hub import try_to_load_from_cache
-        # body_pose_model.pth is the core OpenPose body file.
-        hit = try_to_load_from_cache(repo, "body_pose_model.pth")
-        return isinstance(hit, str) and os.path.exists(hit)
-    except Exception:
+    """Check whether the controlnet_aux annotator weights exist locally."""
+    local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "annotators", "openpose")
+    if not os.path.isdir(local_dir):
         return False
+    for fname in os.listdir(local_dir):
+        if fname.endswith((".safetensors", ".pth", ".bin", ".pt")):
+            return True
+    return False
 
 
 def by_key(key: str) -> CatalogEntry | None:

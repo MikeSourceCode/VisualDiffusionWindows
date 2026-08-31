@@ -2,9 +2,7 @@
 
 This module is the single source of truth for whether a model can be loaded
 by the app. It is used by:
-  - ``getmodel.py``  -- pre-download validation via the HF Hub API
-  - ``app.py``       -- post-download validation before pipeline load
-  - ``setup.py``     -- optional pre-flight during curated downloads
+  - ``app.py``       -- local model validation before pipeline load
 
 A model is considered compatible when it:
   * declares a Stable Diffusion / SDXL pipeline class in ``model_index.json``
@@ -16,7 +14,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +136,7 @@ def check_model_set_structure(model_path: str) -> Tuple[bool, List[str]]:
     if not found_weights:
         reasons.append(
             "No weight files (.safetensors/.bin) found in expected subfolders "
-            "(unet/ or transformer/). The download may be incomplete."
+            "(unet/ or transformer/). Files may be missing from the model set."
         )
         return False, reasons
 
@@ -168,7 +166,7 @@ def check_backend_compatibility(model_path: str, backend: str) -> Tuple[bool, Li
 # ---------------------------------------------------------------------------
 
 def validate_local_model_set(model_path: str, backend: str = "cpu") -> CompatibilityResult:
-    """Validate a downloaded model set for local use."""
+    """Validate a local model set for use."""
     reasons: List[str] = []
 
     ok, idx_reasons = check_model_set_structure(model_path)
@@ -182,44 +180,3 @@ def validate_local_model_set(model_path: str, backend: str = "cpu") -> Compatibi
         return CompatibilityResult(False, reasons)
 
     return CompatibilityResult(True, reasons)
-
-
-def validate_repo(repo_id: str) -> CompatibilityResult:
-    """Validate a Hugging Face repo by its model_index.json without downloading.
-
-    Uses the HF Hub API to fetch ``model_index.json`` metadata only.
-    """
-    reasons: List[str] = []
-
-    try:
-        from huggingface_hub import hf_hub_download
-    except ImportError:
-        reasons.append("huggingface_hub is not installed")
-        return CompatibilityResult(False, reasons)
-
-    try:
-        local_path = hf_hub_download(
-            repo_id=repo_id,
-            filename="model_index.json",
-            local_dir=None,
-            local_dir_use_symlinks=False,
-        )
-    except Exception as exc:
-        reasons.append(
-            f"Could not fetch model_index.json from {repo_id}: {exc}"
-        )
-        reasons.append(
-            "This repo may be a single-file checkpoint, not a folder-based model set. "
-            "If so, download it with a filename argument instead, e.g.:\n"
-            f"  python getmodel.py {repo_id} <filename>.safetensors"
-        )
-        return CompatibilityResult(False, reasons)
-
-    idx = _load_json(local_path)
-    if not idx:
-        reasons.append("model_index.json is not valid JSON")
-        return CompatibilityResult(False, reasons)
-
-    ok, idx_reasons = check_model_index(local_path)
-    reasons.extend(idx_reasons)
-    return CompatibilityResult(ok, reasons)

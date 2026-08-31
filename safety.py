@@ -166,26 +166,47 @@ _SAFETY_CHECKER = None
 
 
 def _resolve_image_censor_source():
-    if os.path.isdir(IMAGE_CENSOR_LOCAL_DIR) and any(
-        f.endswith((".safetensors", ".bin")) for f in os.listdir(IMAGE_CENSOR_LOCAL_DIR)
+    if not (
+        os.path.isdir(IMAGE_CENSOR_LOCAL_DIR)
+        and any(
+            f.endswith((".safetensors", ".bin"))
+            for f in os.listdir(IMAGE_CENSOR_LOCAL_DIR)
+        )
     ):
-        return IMAGE_CENSOR_LOCAL_DIR
-    return IMAGE_CENSOR_REPO
+        raise RuntimeError(
+            "Local safety checker weights not found in %s. Place the %s "
+            "(CompVis/stable-diffusion-safety-checker) weight files (e.g. "
+            "*.safetensors or *.bin) there to enable local-only NSFW filtering."
+            % (IMAGE_CENSOR_LOCAL_DIR, IMAGE_CENSOR_REPO)
+        )
+    return IMAGE_CENSOR_LOCAL_DIR
 
 
 def _load_image_censor():
     global _FEATURE_EXTRACTOR, _SAFETY_CHECKER
     if _FEATURE_EXTRACTOR is None or _SAFETY_CHECKER is None:
-        src = _resolve_image_censor_source()
-        _FEATURE_EXTRACTOR = CLIPImageProcessor.from_pretrained(src)
-        _SAFETY_CHECKER = StableDiffusionSafetyChecker.from_pretrained(src)
-        _SAFETY_CHECKER.eval()
+        try:
+            src = _resolve_image_censor_source()
+            _FEATURE_EXTRACTOR = CLIPImageProcessor.from_pretrained(src)
+            _SAFETY_CHECKER = StableDiffusionSafetyChecker.from_pretrained(src)
+            _SAFETY_CHECKER.eval()
+        except (FileNotFoundError, RuntimeError, EnvironmentError, OSError):
+            print(
+                "[SAFETY] Safety checker weights not found in models/safety_checker/. "
+                "Place the CompVis stable-diffusion-safety-checker files there to "
+                "enable NSFW image filtering."
+            )
+            _FEATURE_EXTRACTOR = None
+            _SAFETY_CHECKER = None
+            return
 
 
 def censor_image(image):
     """Return (censored_pil_image, was_flagged_bool)."""
     global _FEATURE_EXTRACTOR, _SAFETY_CHECKER
     _load_image_censor()
+    if _FEATURE_EXTRACTOR is None or _SAFETY_CHECKER is None:
+        return image, False
     x_image = np.array(image).astype(np.float32) / 255.0
     x_image = x_image[None, ...] if x_image.ndim == 3 else x_image
     safety_input = _FEATURE_EXTRACTOR(

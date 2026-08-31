@@ -1,29 +1,29 @@
-"""Unit tests for getmodel.py destination logic."""
+"""Unit tests for getmodel.py stub behavior."""
 
 import os
 import sys
 import unittest
-from pathlib import Path
+from io import StringIO
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import getmodel
 
 
-class TestGetModel(unittest.TestCase):
-    def test_checkpoint_dir_defaults_to_models_checkpoints(self):
-        expected = getmodel.REPO_ROOT / "models" / "checkpoints"
-        self.assertEqual(getmodel.DEFAULT_CHECKPOINTS, expected)
-
-    def test_model_set_dir_defaults_to_models_model_set(self):
-        expected = getmodel.REPO_ROOT / "models" / "model_set"
-        self.assertEqual(getmodel.DEFAULT_MODEL_SET, expected)
-
-    def test_checkpoint_dir_exists(self):
-        self.assertTrue(getmodel.DEFAULT_CHECKPOINTS.exists())
-
-    def test_model_set_dir_exists(self):
-        self.assertTrue(getmodel.DEFAULT_MODEL_SET.exists())
+class TestGetModelStub(unittest.TestCase):
+    def test_main_prints_local_only_message(self):
+        captured = StringIO()
+        sys.stdout = captured
+        try:
+            with self.assertRaises(SystemExit) as cm:
+                getmodel.main()
+            self.assertEqual(cm.exception.code, 0)
+        finally:
+            sys.stdout = sys.__stdout__
+        output = captured.getvalue()
+        self.assertIn("no longer downloads models", output.lower())
+        self.assertIn("models/checkpoints/", output)
+        self.assertIn("models/model_set/", output)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 Two input paths for the Pose Control tab:
 1. Image -> detected skeleton, via controlnet_aux OpenposeDetector (needs the
-   ~200MB annotator weights, downloaded on first use).
+   ~200MB annotator weights placed locally in models/annotators/openpose/).
 2. JSON keypoints -> rendered skeleton, using the OpenPose COCO-18 body format
    ({"people":[{"pose_keypoints_2d":[x,y,conf, ... 18 triplets]}]}).
 
@@ -13,6 +13,7 @@ colors on black, which is what ControlNet-OpenPose models are trained on.
 from __future__ import annotations
 
 import json
+import os
 from typing import List, Optional
 
 import numpy as np
@@ -42,6 +43,19 @@ POSE_COLORS = [
 
 _detector_cache = {"model": None, "failed": False}
 
+ANNOTATOR_LOCAL_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "models", "annotators", "openpose"
+)
+
+
+def _has_local_weights(path: str) -> bool:
+    if not os.path.isdir(path):
+        return False
+    for name in os.listdir(path):
+        if name.endswith(".pth") or name.endswith(".safetensors"):
+            return True
+    return False
+
 
 def detect_pose_from_image(img: Image.Image, detect_resolution: int = 512,
                            image_resolution: int = 1024,
@@ -53,9 +67,18 @@ def detect_pose_from_image(img: Image.Image, detect_resolution: int = 512,
     if _detector_cache["model"] is None:
         try:
             from controlnet_aux import OpenposeDetector
-            _detector_cache["model"] = OpenposeDetector.from_pretrained(
-                "lllyasviel/Annotators"
-            )
+            if _has_local_weights(ANNOTATOR_LOCAL_DIR):
+                _detector_cache["model"] = OpenposeDetector.from_pretrained(
+                    ANNOTATOR_LOCAL_DIR
+                )
+            else:
+                _detector_cache["failed"] = True
+                print(
+                    "OpenPose annotator weights not found in "
+                    "models/annotators/openpose/. Place the body_pose_model.pth "
+                    "there to enable pose detection."
+                )
+                return None
         except Exception:
             _detector_cache["failed"] = True
             return None

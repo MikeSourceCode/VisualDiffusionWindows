@@ -123,8 +123,7 @@ def refresh_pipeline(cfg: AppConfig, assets: dict):
             st.error(
                 f"**'{cfg.checkpoint}' is not compatible.**\\n\\n" +
                 "\\n".join(f"- {r}" for r in result.reasons) +
-                "\\n\\nRe-download it with:\\n" +
-                f"```bash\\npython getmodel.py {cfg.checkpoint.replace('_', '/')}\\n```"
+                "\\n\\nThis model set is missing required files. Place the required files in the model_set folder manually."
             )
             return None, None, None
 
@@ -522,7 +521,7 @@ def tab_image_control(assets):
     cfg = st.session_state.app_config
     controlnets = assets["controlnets"]
     if not controlnets and not _controlnet_dirs(assets):
-        st.info("No ControlNet found in models/controlnet/. Download e.g. controlnet-canny-sdxl-1.0 to enable this tab.")
+        st.info("No ControlNet found in models/controlnet/. Place a ControlNet directory (e.g. controlnet-canny-sdxl-1.0) in that folder to enable this tab.")
         return
 
     col1, col2 = st.columns([1, 1])
@@ -778,7 +777,7 @@ def tab_pose_control(assets):
                "(image or JSON keypoints) to apply the pose to the reference.")
     cfg = st.session_state.app_config
     if not _controlnet_dirs(assets):
-        st.info("No ControlNet found in models/controlnet/. Download an OpenPose SDXL ControlNet to enable this tab.")
+        st.info("No ControlNet found in models/controlnet/. Place an OpenPose SDXL ControlNet directory there to enable this tab.")
         return
 
     col1, col2 = st.columns([1, 1])
@@ -1036,7 +1035,7 @@ def _refresh_controlnet_pipeline(cfg, assets, prefer=None):
     dirs = _controlnet_dirs(assets)
     if not dirs:
         st.error("No ControlNet model directory found in models/controlnet/. "
-                 "Run `python setup.py` to download one, or add it manually.")
+                 "Place a ControlNet model directory in models/controlnet/ to enable this tab.")
         return None, None, None
     # Pick a controlnet dir: prefer one whose name contains `prefer` (e.g. 'canny'
     # or 'pose'), else fall back with a clear notice.
@@ -1049,7 +1048,7 @@ def _refresh_controlnet_pipeline(cfg, assets, prefer=None):
     if chosen is None:
         if prefer:
             st.warning(f"No '{prefer}' ControlNet found in models/controlnet/. "
-                       f"Run `python setup.py` to download it. Using '{dirs[0]}' instead, "
+                       f"Place a '{prefer}' ControlNet in models/controlnet/. Using '{dirs[0]}' instead, "
                        "which may not match this tab.")
         chosen = dirs[0]
     d = assets["dirs"]
@@ -1077,9 +1076,8 @@ def _detect_pose(img):
     from core.catalog import by_key
     entry = by_key("openpose_annotator")
     if entry is not None and not entry.is_present(os.path.dirname(os.path.abspath(__file__))):
-        st.info("OpenPose annotator weights not found — downloading (~200 MB) on first use. "
-                "This one-time step makes the first pose detection slow. "
-                "Tip: run `python setup.py` to fetch it in advance.")
+        st.info("OpenPose annotator weights not found. Place the annotator weights in models/annotators/ to enable pose detection. "
+                "The first pose detection will be slow until the annotator is loaded.")
     try:
         return detect_pose_from_image(img)
     except Exception as e:

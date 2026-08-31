@@ -4,9 +4,7 @@ Setup script for the Streamlit Image Generation App
 -------------------------------------------------
 - Creates required folders
 - Optionally installs requirements.txt
-- Downloads official SDXL Base 1.0 (safest starting point)
-- Downloads official SDXL VAE
-- Lets the operator add extra models / VAEs / LoRAs
+- Does NOT download models automatically; the operator must place them manually
 - Puts responsibility for ethical use on the operator
 """
 
@@ -15,7 +13,6 @@ import os
 import sys
 import subprocess
 from pathlib import Path
-from huggingface_hub import hf_hub_download, snapshot_download
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.catalog import CATALOG, CatalogEntry
@@ -48,57 +45,6 @@ def install_requirements():
         print("✓ Requirements installed\n")
     else:
         print("Skipped requirements installation.\n")
-
-
-def download_catalog_entry(entry: CatalogEntry) -> bool:
-    """Download one catalog entry (specific files, whole-repo, or annotator)."""
-    root = os.path.dirname(os.path.abspath(__file__))
-    print(f"\nDownloading {entry.desc} ({entry.size})...")
-    try:
-        if entry.kind == "annotator":
-            # controlnet_aux caches the annotator in the HF cache on first load.
-            from controlnet_aux import OpenposeDetector
-            OpenposeDetector.from_pretrained(entry.repo)
-            print("✓ Annotator cached (Hugging Face cache)")
-            return True
-
-        dest = entry.dest_abs(root)
-        Path(dest).mkdir(parents=True, exist_ok=True)
-        if entry.files:
-            for fn in entry.files:
-                p = hf_hub_download(repo_id=entry.repo, filename=fn, local_dir=dest,
-                                    local_dir_use_symlinks=False)
-                mb = os.path.getsize(p) // (1024 * 1024)
-                print(f"  ✓ {fn} ({mb} MB)")
-        else:
-            snapshot_download(repo_id=entry.repo, local_dir=dest, local_dir_use_symlinks=False)
-            print(f"  ✓ snapshot → {dest}")
-        return True
-    except Exception as e:
-        print(f"✗ Download failed: {e}")
-        return False
-
-
-def prompt_catalog():
-    """Iterate the model catalog; offer to download each missing asset."""
-    root = os.path.dirname(os.path.abspath(__file__))
-    print("=" * 60)
-    print("STEP 1 – App models (download now or skip; you can rerun setup later)")
-    print("=" * 60)
-    for entry in CATALOG:
-        present = entry.is_present(root)
-        status = "already present" if present else "NOT downloaded"
-        print(f"\n• {entry.desc}")
-        print(f"    for: {entry.required_for} | size: {entry.size} | status: {status}")
-        if present:
-            print("    → skipping (already on disk)")
-            continue
-        choice = input(f"    Download now? [Y/n] (ENTER=yes): ").strip().lower()
-        if choice in ("", "y", "yes"):
-            download_catalog_entry(entry)
-        else:
-            print("    → skipped. The app will download/first-load it on demand "
-                  "(the first such generation will be slower).")
 
 
 def _prompt_common(models_root: str, existing: dict) -> dict:
@@ -461,59 +407,6 @@ def write_operator_config():
     print(f"✓ Config written → {config_file_path()}\n")
 
 
-def download_file(repo_id: str, filename: str, local_dir: str, description: str):
-    """Download a single file and return the local path."""
-    print(f"\nDownloading {description}...")
-    print(f"  repo_id  : {repo_id}")
-    print(f"  filename : {filename}")
-    print(f"  target   : {local_dir}/")
-    try:
-        path = hf_hub_download(
-            repo_id=repo_id,
-            filename=filename,
-            local_dir=local_dir,
-            local_dir_use_symlinks=False,
-        )
-        print(f"✓ Downloaded → {path}")
-        return path
-    except Exception as e:
-        print(f"✗ Download failed: {e}")
-        return None
-
-
-def prompt_extra_download(local_dir: str, kind: str = "model"):
-    """
-    Let the user enter additional downloads while the main one is happening
-    or after it finishes. Empty line = skip.
-    """
-    print("\n" + "-" * 50)
-    print(f"You can download extra {kind}s now.")
-    print("Format example:")
-    print("  repo_id/filename")
-    print("  e.g.  stabilityai/stable-diffusion-xl-base-1.0/sd_xl_base_1.0.safetensors")
-    print("  or just press ENTER to skip and continue.")
-    print("-" * 50)
-
-    while True:
-        user_input = input(f"Extra {kind} (repo_id/filename) or ENTER to skip: ").strip()
-        if not user_input:
-            print("→ Skipping extra downloads.\n")
-            break
-
-        try:
-            if "/" not in user_input:
-                print("Invalid format. Please use: repo_id/filename")
-                continue
-
-            # Split only on the last slash so repo_id can contain /
-            *repo_parts, filename = user_input.rsplit("/", 1)
-            repo_id = "/".join(repo_parts)
-
-            download_file(repo_id, filename, local_dir, f"extra {kind}")
-        except Exception as e:
-            print(f"Error: {e}")
-
-
 # ----------------------------------------------------------------------
 # Main flow
 # ----------------------------------------------------------------------
@@ -524,41 +417,41 @@ def main():
     print(
         "\nIMPORTANT – OPERATOR RESPONSIBILITY\n"
         "You are solely responsible for how this software and any models\n"
-        "you download are used. Always follow applicable laws, platform\n"
+        "you use are used. Always follow applicable laws, platform\n"
         "policies, and ethical guidelines. Do not generate illegal,\n"
         "harmful, or non-consensual content.\n"
     )
     input("Press ENTER to continue if you accept this responsibility...")
 
     ensure_dirs()
-
-    # ---------- 0.5 Operator config (safety + defaults) ----------
     write_operator_config()
-
-    # ---------- 0. Requirements ----------
     install_requirements()
 
-    # ---------- 1. Curated app models (from core/catalog.py) ----------
-    prompt_catalog()
-
-    # ---------- 2. Extra user-supplied assets ----------
+    # ---------- Expected model assets ----------
     print("\n" + "=" * 60)
-    print("STEP 2 – Add your own extra models / VAEs / LoRAs (optional)")
+    print("STEP 1 – Expected model assets")
     print("=" * 60)
-    prompt_extra_download("models/checkpoints", kind="checkpoint")
-    prompt_extra_download("models/vae", kind="VAE")
-    prompt_extra_download("models/lora", kind="LoRA")
+    print(
+        "\nThe app does NOT download models automatically.\n"
+        "Place the following files in the models/ folder before starting the app:\n"
+        "  • models/checkpoints/   – your checkpoint file (.safetensors / .ckpt)\n"
+        "  • models/vae/           – your VAE file (.safetensors)\n"
+        "  • models/lora/          – your LoRA files (.safetensors)\n"
+        "  • models/controlnet/    – your ControlNet files (.safetensors)\n"
+        "  • models/safety_checker/– safety checker model files\n"
+        "  • models/annotators/    – annotator model files (e.g. OpenPose)\n"
+    )
 
     # ---------- Done ----------
     print("\n" + "=" * 60)
     print("✓ SETUP COMPLETE")
     print("=" * 60)
     print(
+        "Place your checkpoint, VAE, LoRA, ControlNet, and safety-checker files\n"
+        "in the models/ folder before starting the app.\n\n"
+        "The app does not download models automatically.\n\n"
         "You can now start the Streamlit app with:\n"
         "    streamlit run app.py\n\n"
-        "Skipped a model? The app will download or first-load it on demand and\n"
-        "tell you when it does (that first generation will be slower). You can\n"
-        "also rerun `python setup.py` any time to fetch it up front.\n\n"
         "Remember: ethical use is the operator's responsibility.\n"
     )
 
@@ -577,7 +470,7 @@ def run_config_only():
 def list_catalog():
     """Print catalog status without prompting (python setup.py --list)."""
     root = os.path.dirname(os.path.abspath(__file__))
-    print("\nModel catalog status:\n")
+    print("\nExpected model assets (from catalog):\n")
     print(f"  {'KEY':<28}{'PRESENT':<9}{'SIZE':<10}DESCRIPTION")
     for e in CATALOG:
         print(f"  {e.key:<28}{('yes' if e.is_present(root) else 'NO'):<9}{e.size:<10}{e.desc}")

@@ -11,11 +11,13 @@ small); this keeps the MPS device free for the diffusion pipeline.
 
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from PIL import Image
 
 
+_BLIP_LOCAL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "blip")
 _MODEL_ID = "Salesforce/blip-image-captioning-base"
 _cache = {"proc": None, "model": None, "failed": False}
 
@@ -25,10 +27,14 @@ def _ensure_loaded() -> bool:
         return True
     if _cache["failed"]:
         return False
+    if not os.path.isdir(_BLIP_LOCAL_DIR) or not os.listdir(_BLIP_LOCAL_DIR):
+        print("BLIP weights not found locally. Expected directory: " + os.path.abspath(_BLIP_LOCAL_DIR))
+        _cache["failed"] = True
+        return False
     try:
         from transformers import BlipProcessor, BlipForConditionalGeneration
-        _cache["proc"] = BlipProcessor.from_pretrained(_MODEL_ID)
-        _cache["model"] = BlipForConditionalGeneration.from_pretrained(_MODEL_ID).to("cpu")
+        _cache["proc"] = BlipProcessor.from_pretrained(_BLIP_LOCAL_DIR)
+        _cache["model"] = BlipForConditionalGeneration.from_pretrained(_BLIP_LOCAL_DIR).to("cpu")
         return True
     except Exception:
         _cache["failed"] = True

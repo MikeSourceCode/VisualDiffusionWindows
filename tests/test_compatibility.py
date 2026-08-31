@@ -15,7 +15,6 @@ from core.compatibility import (
     check_model_index,
     check_model_set_structure,
     validate_local_model_set,
-    validate_repo,
 )
 
 
@@ -212,17 +211,6 @@ class TestCompatibilityResult(unittest.TestCase):
     def test_bool_false_when_incompatible(self):
         r = CompatibilityResult(False, ["reason"])
         self.assertFalse(bool(r))
-
-
-class TestValidateRepo(unittest.TestCase):
-    def test_mage_flow_repo_is_incompatible(self):
-        result = validate_repo("microsoft/Mage-Flow")
-        self.assertFalse(result)
-        self.assertTrue(any("MageFlowPipeline" in r for r in result.reasons))
-
-    def test_sdxl_repo_is_compatible(self):
-        result = validate_repo("stabilityai/stable-diffusion-xl-base-1.0")
-        self.assertTrue(result)
 
 
 if __name__ == "__main__":
