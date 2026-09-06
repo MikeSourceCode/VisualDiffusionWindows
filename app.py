@@ -61,6 +61,9 @@ from ui import render_share_card, render_phone_frame
 os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 os.environ.setdefault("TORCHINDUCTOR_COMPILE_THREADS", "1")
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+os.environ.setdefault("HF_DATASETS_OFFLINE", "1")
 warnings.filterwarnings(
     "ignore",
     category=UserWarning,
