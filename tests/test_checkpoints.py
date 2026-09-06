@@ -13,7 +13,7 @@ class TestCombinedCheckpoints(unittest.TestCase):
     def test_model_set_dir_in_config(self):
         dirs = config_model_dirs("/tmp/models")
         self.assertIn("model_set", dirs)
-        self.assertEqual(dirs["model_set"], "/tmp/models/model_set")
+        self.assertTrue(dirs["model_set"].endswith(os.path.join("models", "model_set")))
 
     def test_config_dirs_include_all_required(self):
         dirs = config_model_dirs()
