@@ -592,10 +592,12 @@ def tab_ip_consistency(assets):
         out = st.empty()
     if gen and ref is not None:
         ref_img = _pil_from_upload(ref)
-        # Show the reference image INSIDE the phone frame before denoising.
+        ref_img = ref_img.resize((cfg.width, cfg.height))
         render_phone_frame(ref_img, caption="Reference", target=out)
         _run_generation(pipe, backend, vram_state, cfg, prompt, negative,
-                        init_image=ref_img, preview_slot=out, tab="IP Consistency")
+                        init_image=ref_img, preview_slot=out,
+                        share_card=True, share_text=prompt, tab="IP Consistency",
+                        key_prefix="share_ip")
 
 
 def tab_text_to_image(assets):
