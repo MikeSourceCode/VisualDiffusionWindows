@@ -28,12 +28,83 @@ def ensure_dirs():
     print("✓ Folders ready: models/{checkpoints,vae,lora,controlnet,annotators,safety_checker,safety}, outputs\n")
 
 
+def _detect_nvidia_gpu() -> bool:
+    """Check if an NVIDIA GPU is present via nvidia-smi."""
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+            capture_output=True, text=True, timeout=10,
+        )
+        return result.returncode == 0 and bool(result.stdout.strip())
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
+def _detect_torch_cuda() -> bool:
+    """Check if the currently installed torch has CUDA support."""
+    try:
+        import torch
+        return torch.cuda.is_available()
+    except ImportError:
+        return False
+
+
+def install_torch():
+    print("=" * 60)
+    print("STEP 0a – Install PyTorch (GPU or CPU)")
+    print("=" * 60)
+
+    if _detect_torch_cuda():
+        print("✓ PyTorch with CUDA already installed.\n")
+        return
+
+    # Check if the current torch is CPU-only
+    torch_is_cpu = False
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            torch_is_cpu = True
+    except ImportError:
+        torch_is_cpu = False
+
+    gpu_available = _detect_nvidia_gpu()
+
+    if gpu_available:
+        print("\nNVIDIA GPU detected via nvidia-smi.")
+        choice = input(
+            "Install CUDA-accelerated PyTorch? [Y/n] (ENTER=yes): "
+        ).strip().lower()
+        if choice not in ("n", "no"):
+            print("Installing PyTorch with CUDA 12.8 support (large download ~2.8 GB)...")
+            subprocess.check_call([
+                sys.executable, "-m", "pip", "install", "--force-reinstall",
+                "torch", "torchvision",
+                "--index-url", "https://download.pytorch.org/whl/cu128",
+            ])
+            print("✓ CUDA PyTorch installed\n")
+        else:
+            print("→ Skipped. Install manually with:")
+            print("    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128\n")
+    else:
+        print("\nNo NVIDIA GPU detected (nvidia-smi not found).")
+        choice = input("Install CPU-only PyTorch? [Y/n] (ENTER=yes): ").strip().lower()
+        if choice not in ("n", "no"):
+            print("Installing CPU-only PyTorch...")
+            subprocess.check_call([
+                sys.executable, "-m", "pip", "install", "--force-reinstall",
+                "torch", "torchvision",
+            ])
+            print("✓ CPU PyTorch installed\n")
+        else:
+            print("→ Skipped.\n")
+
+
 def install_requirements():
     print("=" * 60)
-    print("STEP 0 – Install Python dependencies")
+    print("STEP 0b – Install Python dependencies")
     print("=" * 60)
     try:
-        import streamlit, diffusers, transformers, torch, PIL
+        import streamlit, diffusers, transformers, PIL
         print("✓ Core dependencies already installed (skipping requirements install).\n")
         return
     except ImportError:
@@ -425,6 +496,7 @@ def main():
 
     ensure_dirs()
     write_operator_config()
+    install_torch()
     install_requirements()
 
     # ---------- Expected model assets ----------

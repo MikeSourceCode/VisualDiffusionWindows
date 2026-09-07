@@ -1,6 +1,8 @@
 streamlit>=1.35.0
-torch>=2.3.0
-torchvision>=0.18.0
+# torch and torchvision are installed by setup.py with the correct CUDA variant.
+# See: python setup.py
+#   - CUDA build:  pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+#   - CPU build:   pip install torch torchvision
 diffusers>=0.29.0
 transformers>=4.41.0
 accelerate>=0.30.0
@@ -15,4 +17,3 @@ numpy>=1.24.0
 controlnet-aux>=0.0.6
 insightface>=1.0.1
 onnxruntime>=1.27.0
-
