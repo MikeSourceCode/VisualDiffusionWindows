@@ -1,5 +1,7 @@
 # OS
 .DS_Store
+Thumbs.db
+Desktop.ini
 
 # Python virtual environment / installed packages
 development/
