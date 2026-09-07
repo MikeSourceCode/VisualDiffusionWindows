@@ -29,10 +29,11 @@ app runs entirely under your local control.
 ## Essential Setup
 
 1. **Clone** the repo
-2. **Create the venv** — `python3.12 -m venv visual && source visual/bin/activate`
+2. **Create the venv** — `python -m venv visual && visual\Scripts\activate`
 3. **Install dependencies** — `pip install -r requirements.txt`
-4. **Run setup** — `python setup.py` (creates directories, downloads curated models, configures safety)
-5. **Launch** — `streamlit run app.py`
+4. **Run setup** — `python setup.py` (creates directories, detects GPU for CUDA PyTorch, configures safety)
+5. **Place models** — Put checkpoint/VAE/LoRA files in `models/` (see `[repo]/models/README.md` for guidance)
+6. **Launch** — `streamlit run app.py`
 
 For full step-by-step setup, model placement, and operator configuration, see **[SETUP.md](SETUP.md)**.
 
@@ -49,7 +50,7 @@ For full step-by-step setup, model placement, and operator configuration, see **
 - **`ui/`** — Share card and phone-frame rendering
 - **`config/app_config.example.json`** — Configuration template
 - **`config/app_config.json`** — Live operator config (gitignored, created by `setup.py`)
-- **`setup.py`** — First-time setup, model downloads, and safety prompts
+- **`setup.py`** — First-time setup (GPU/CUDA detection, safety prompts, config)
 - **`requirements.txt`** — Python dependencies
 
 ## Configuration
@@ -89,7 +90,7 @@ See `safety.py` and `models/safety_checker/README.md` for details on each layer.
 - IP-Adapters → `models/ip-adapter/`
 - Safety checkers → `models/safety_checker/`
 
-Missing assets are detected at runtime; the app will prompt you to download them on first use.
+Each subfolder contains a `README.md` with download links. The app does **not** download models automatically — you must place the files yourself before generation.
 
 
 ## ⚖️ Ethical Use & Safety Disclaimer
