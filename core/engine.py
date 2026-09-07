@@ -125,7 +125,11 @@ def clear_cache(backend: Backend):
 
 def detect_vram_mb(backend: Backend) -> float:
     if backend in (Backend.CUDA, Backend.ROCM) and torch.cuda.is_available():
-        return torch.cuda.mem_get_info()[0] / (1024 * 1024)
+        # Use TOTAL VRAM (index 1), not free VRAM (index 0), so the VRAM-state
+        # classification is stable across generations. Free VRAM drops as
+        # pipelines cache weights, which would falsely trigger "VRAM too low".
+        _free, total = torch.cuda.mem_get_info()
+        return total / (1024 * 1024)
     return 0.0
 
 
