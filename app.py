@@ -646,7 +646,7 @@ def tab_pixel_art(assets):
             default_prompt="pixel art, 16-bit SNES style, limited color palette, clean pixels, dithering, retro game sprite, transparent background",
             default_negative="3d, realistic, blurry, smooth, anti-aliased, photorealistic, soft edges, gradient",
         )
-        pixel_scale = st.slider("Pixel Scale", 2, 32, 8, 1,
+        pixel_scale = st.slider("Pixel Scale", 8, 32, 8, 1,
                                 help=" Divisor for nearest-neighbor downscale. Higher = chunkier pixels.")
         gen = st.button("🎮 Generate Pixel Art", use_container_width=True, key="px_gen")
     with col2:
